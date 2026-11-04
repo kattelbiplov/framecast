@@ -1,0 +1,15 @@
+{
+  "name": "@framecast/animation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Easing, keyframe interpolation, animation and transition presets.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@framecast/schema": "0.1.0"
+  }
+}

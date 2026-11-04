@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/schema" },
+    { "path": "packages/animation" },
+    { "path": "packages/cursor" },
+    { "path": "packages/zoom" },
+    { "path": "packages/timeline" },
+    { "path": "packages/subtitles" },
+    { "path": "packages/compositor" },
+    { "path": "packages/export" }
+  ]
+}

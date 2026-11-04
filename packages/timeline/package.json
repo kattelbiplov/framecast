@@ -1,0 +1,15 @@
+{
+  "name": "@framecast/timeline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Immutable timeline editing operations, snapping and undo/redo history.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@framecast/schema": "0.1.0"
+  }
+}

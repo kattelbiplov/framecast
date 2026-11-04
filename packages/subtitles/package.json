@@ -1,0 +1,16 @@
+{
+  "name": "@framecast/subtitles",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SRT/VTT, whisper.cpp parsing, cue segmentation and animated caption evaluation.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@framecast/schema": "0.1.0",
+    "@framecast/animation": "0.1.0"
+  }
+}
