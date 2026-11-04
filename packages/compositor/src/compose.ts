@@ -9,11 +9,12 @@ import {
   type LayerEffect,
 } from '@framecast/animation';
 import type { CursorTrack } from '@framecast/cursor';
-import type { ClipItem, Rect, ShapeItem, TextItem, Track } from '@framecast/schema';
+import type { ClipItem, GraphicItem, Rect, ShapeItem, Size, TextItem, Track } from '@framecast/schema';
 import { evaluateCaption } from '@framecast/subtitles';
 import { clipSourceTime, itemEnd } from '@framecast/timeline';
 import { evaluateCamera, type CameraState } from '@framecast/zoom';
 import type { Composition } from './composition.js';
+import { graphicSize } from './graphics.js';
 import { fitRect, layoutScreen } from './layout.js';
 import type {
   AudioVoice,
@@ -191,6 +192,25 @@ function evaluateShape(item: ShapeItem, t: number): OverlayNode {
   };
 }
 
+function evaluateGraphic(item: GraphicItem, t: number, canvas: Size): OverlayNode {
+  const local = t - item.start;
+  const k = evaluateChannels(item.keyframes, local, {
+    x: item.transform.x, y: item.transform.y, scale: item.transform.scale,
+    rotation: item.transform.rotation, opacity: item.transform.opacity,
+  });
+  const pose = evaluateItemAnimation(local, item.duration, item.animationIn, item.animationOut);
+  const scale = (k.scale ?? 1) * pose.scale;
+  const size = graphicSize(item.kind, canvas, scale);
+  const cx = ((k.x ?? 0.5) + pose.dx) * canvas.width;
+  const cy = ((k.y ?? 0.5) + pose.dy) * canvas.height;
+  return {
+    kind: 'graphic', item, scale,
+    box: { x: cx - size.width / 2, y: cy - size.height / 2, width: size.width, height: size.height },
+    rotationDeg: (k.rotation ?? 0) + pose.rotation,
+    opacity: clamp((k.opacity ?? 1) * pose.opacity), localT: local, duration: item.duration, pose,
+  };
+}
+
 function evaluateOverlayClip(comp: Composition, clip: ClipItem, t: number): VideoLayer {
   const { width: W, height: H } = comp.project.canvas.size;
   const asset = comp.assets.get(clip.assetId);
@@ -241,6 +261,7 @@ export function composeFrame(comp: Composition, t: number): FrameScene {
       if (t < item.start || t >= itemEnd(item)) continue;
       if (item.type === 'text') overlays.push(evaluateText(item, t));
       else if (item.type === 'shape') overlays.push(evaluateShape(item, t));
+      else if (item.type === 'graphic') overlays.push(evaluateGraphic(item, t, project.canvas.size));
       else if (item.type === 'clip' && track.kind === 'video') overlays.push(evaluateOverlayClip(comp, item, t));
     }
   }

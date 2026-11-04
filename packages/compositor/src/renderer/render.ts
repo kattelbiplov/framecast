@@ -3,6 +3,7 @@ import { drawBackground } from './background.js';
 import { drawCaption } from './captions.js';
 import { intrinsicSize, roundRectPath, type Ctx2D, type FrameSources, type RenderTarget } from './context.js';
 import { drawCursor } from './cursor.js';
+import { drawGraphic } from './graphics.js';
 import { drawVideoLayer, drawScreen } from './screen.js';
 import { drawShape } from './shapes.js';
 import { drawText } from './text.js';
@@ -72,6 +73,7 @@ export function renderScene(target: RenderTarget, scene: FrameScene, sources: Fr
 
   for (const node of scene.overlays) {
     if (node.kind === 'text') drawText(ctx, node, W, H);
+    else if (node.kind === 'graphic') drawGraphic(ctx, node);
     else if (node.kind === 'shape') {
       if (node.item.shape === 'image' && node.item.assetId) {
         const img = sources.frame(node.item.assetId, 0);

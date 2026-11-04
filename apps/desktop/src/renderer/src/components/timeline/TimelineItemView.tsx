@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { Sparkles, Type, ZoomIn } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { ANIMATION_DRAG_TYPE, applyAnimationToItem } from '../../editor/animation-dnd';
+import { GRAPHIC_LABELS } from '../../editor/factories';
 import { PEAKS_PER_SECOND, useWaveform } from '../../playback/waveform';
 import { useEditor } from '../../stores/editor';
 import { msToPx, pxToMs } from './geometry';
@@ -14,6 +15,7 @@ const COLORS: Record<string, string> = {
   zoom: 'bg-amber-500/80 border-amber-200/60',
   text: 'bg-sky-500/80 border-sky-200/60',
   shape: 'bg-rose-500/80 border-rose-200/60',
+  graphic: 'bg-fuchsia-500/80 border-fuchsia-200/60',
 };
 
 const SNAP_PX = 8;
@@ -71,7 +73,7 @@ export function TimelineItemView({ item, track, asset, mediaUrl, pps, selected, 
       role="button" tabIndex={0} aria-label={label(item, asset)} aria-pressed={selected}
       onPointerDown={(e) => onPointerDown(e, 'move')}
       onKeyDown={(e) => e.key === 'Enter' && useEditor.getState().select([item.id])}
-      onDragOver={(e) => (item.type === 'text' || item.type === 'shape') && e.dataTransfer.types.includes(ANIMATION_DRAG_TYPE) && e.preventDefault()}
+      onDragOver={(e) => (item.type === 'text' || item.type === 'shape' || item.type === 'graphic') && e.dataTransfer.types.includes(ANIMATION_DRAG_TYPE) && e.preventDefault()}
       onDrop={(e) => {
         const presetId = e.dataTransfer.getData(ANIMATION_DRAG_TYPE);
         if (!presetId) return;
@@ -115,6 +117,8 @@ function label(item: TimelineItem, asset?: Asset): string {
       return item.text.split('\n')[0] || 'Text';
     case 'shape':
       return item.label || item.shape;
+    case 'graphic':
+      return item.title || GRAPHIC_LABELS[item.kind];
   }
 }
 

@@ -41,7 +41,7 @@ export function AnimationsPanel() {
   const transitions = useMemo(() => TRANSITION_PRESETS.filter((t) =>
     (category === 'all' || category === 'transitions' || (category === 'favorites' && favorites.has(`t:${t.id}`))) && (!q || t.name.toLowerCase().includes(q))), [category, favorites, q]);
 
-  const target = sel && (sel.item.type === 'text' || sel.item.type === 'shape') ? sel.item : null;
+  const target = sel && (sel.item.type === 'text' || sel.item.type === 'shape' || sel.item.type === 'graphic') ? sel.item : null;
   const clipTarget = sel?.item.type === 'clip' ? sel.item : null;
 
   return (

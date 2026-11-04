@@ -1,5 +1,5 @@
 import { getAnimationPreset } from '@framecast/animation';
-import { TextStyle, newId, type AnimationRef, type ClipItem, type ShapeItem, type ShapeKind, type TextItem, type ZoomItem } from '@framecast/schema';
+import { TextStyle, newId, type AnimationRef, type ClipItem, type GraphicItem, type GraphicKind, type ShapeItem, type ShapeKind, type TextItem, type ZoomItem } from '@framecast/schema';
 
 export function animationRef(presetId: string, overrides: Partial<AnimationRef> = {}): AnimationRef {
   const preset = getAnimationPreset(presetId);
@@ -62,5 +62,30 @@ export function makeShape(shape: ShapeKind, start: number, extra: Partial<ShapeI
     animationIn: shape === 'blur' || shape === 'pixelate' ? null : animationRef(shape === 'arrow' || shape === 'line' || shape === 'rectangle' || shape === 'ellipse' ? 'drawOn' : 'pop'),
     animationOut: shape === 'blur' || shape === 'pixelate' ? null : animationRef('fade', { durationMs: 250 }),
     keyframes: {}, ...extra,
+  };
+}
+
+export const GRAPHIC_LABELS: Record<GraphicKind, string> = {
+  lowerThird: 'Lower third', progressBar: 'Progress bar', notification: 'Notification', barChart: 'Bar chart', subscribe: 'Subscribe', counter: 'Counter',
+};
+
+const GRAPHIC_DEFAULTS: Record<GraphicKind, Partial<GraphicItem>> = {
+  lowerThird: { title: 'Jane Cooper', subtitle: 'Head of Product', transform: { x: 0.3, y: 0.82, scale: 1, rotation: 0, opacity: 1 }, duration: 4500 },
+  progressBar: { title: '', transform: { x: 0.5, y: 0.965, scale: 1, rotation: 0, opacity: 1 }, duration: 10_000 },
+  notification: { title: 'Deploy succeeded', subtitle: 'framecast-web is live on production', transform: { x: 0.8, y: 0.12, scale: 1, rotation: 0, opacity: 1 }, duration: 3500 },
+  barChart: { title: 'Weekly active users', values: [12, 18, 15, 24, 31], labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], transform: { x: 0.5, y: 0.5, scale: 1, rotation: 0, opacity: 1 }, duration: 5000 },
+  subscribe: { title: 'SUBSCRIBE', subtitle: 'SUBSCRIBED', primaryColor: '#ef4444', transform: { x: 0.5, y: 0.85, scale: 1, rotation: 0, opacity: 1 }, duration: 3500 },
+  counter: { title: 'happy customers', values: [12500], labels: ['', '+'], primaryColor: '#ffffff', transform: { x: 0.5, y: 0.45, scale: 1, rotation: 0, opacity: 1 }, duration: 4000 },
+};
+
+export function makeGraphic(kind: GraphicKind, start: number): GraphicItem {
+  return {
+    id: newId('gfx'), type: 'graphic', kind, start, duration: 4000, title: '', subtitle: '', values: [], labels: [],
+    primaryColor: '#6366f1', secondaryColor: '#ffffff', textColor: '#ffffff', fontFamily: 'Inter',
+    transform: { x: 0.5, y: 0.5, scale: 1, rotation: 0, opacity: 1 },
+    animationIn: kind === 'progressBar' ? null : animationRef('fade', { durationMs: 250 }),
+    animationOut: animationRef('fade', { durationMs: 300 }),
+    keyframes: {},
+    ...GRAPHIC_DEFAULTS[kind],
   };
 }

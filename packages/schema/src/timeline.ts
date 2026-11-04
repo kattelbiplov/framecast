@@ -136,7 +136,33 @@ export const ShapeItem = ItemBase.extend({
 });
 export type ShapeItem = z.infer<typeof ShapeItem>;
 
-export const TimelineItem = z.discriminatedUnion('type', [ClipItem, ZoomItem, TextItem, ShapeItem]);
+export const GraphicKind = z.enum(['lowerThird', 'progressBar', 'notification', 'barChart', 'subscribe', 'counter']);
+export type GraphicKind = z.infer<typeof GraphicKind>;
+
+/**
+ * Parametric motion graphic with a built-in, time-driven animation (lower thirds, charts…).
+ * `transform.x/y` anchor the graphic on the canvas; entrance/exit presets layer on top.
+ */
+export const GraphicItem = ItemBase.extend({
+  type: z.literal('graphic'),
+  kind: GraphicKind,
+  title: z.string().default(''),
+  subtitle: z.string().default(''),
+  /** Data for charts / counters. */
+  values: z.array(z.number().finite()).default([]),
+  labels: z.array(z.string()).default([]),
+  primaryColor: Color.default('#6366f1'),
+  secondaryColor: Color.default('#ffffff'),
+  textColor: Color.default('#ffffff'),
+  fontFamily: z.string().default('Inter'),
+  transform: Transform.default({}),
+  animationIn: AnimationRef.nullable().default(null),
+  animationOut: AnimationRef.nullable().default(null),
+  keyframes: KeyframeTracks,
+});
+export type GraphicItem = z.infer<typeof GraphicItem>;
+
+export const TimelineItem = z.discriminatedUnion('type', [ClipItem, ZoomItem, TextItem, ShapeItem, GraphicItem]);
 export type TimelineItem = z.infer<typeof TimelineItem>;
 export type TimelineItemType = TimelineItem['type'];
 
@@ -149,7 +175,7 @@ export const TRACK_ACCEPTS: Record<TrackKind, readonly TimelineItemType[]> = {
   audio: ['clip'],
   zoom: ['zoom'],
   text: ['text'],
-  graphics: ['shape'],
+  graphics: ['shape', 'graphic'],
 };
 
 export const Track = z.object({

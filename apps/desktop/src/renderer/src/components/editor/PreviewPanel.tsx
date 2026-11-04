@@ -1,5 +1,5 @@
 import { composeFrame, type OverlayNode, type RenderTarget } from '@framecast/compositor';
-import type { ShapeItem, TextItem } from '@framecast/schema';
+import type { GraphicItem, ShapeItem, TextItem } from '@framecast/schema';
 import { requireItem, updateItem } from '@framecast/timeline';
 import { Maximize2, Minimize2, Pause, Play, Scissors, SkipBack, SkipForward, ZoomIn } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -110,13 +110,13 @@ function CanvasInteraction({ width, height }: { width: number; height: number })
     s.select(id ? [id] : []);
     if (!id) return;
     const loc = requireItem(s.project.timeline, id);
-    const startItem = loc.item as TextItem | ShapeItem;
+    const startItem = loc.item as TextItem | ShapeItem | GraphicItem;
     e.currentTarget.setPointerCapture(e.pointerId);
     const move = (ev: PointerEvent) => {
       const dx = (ev.clientX - e.clientX) / rect.width;
       const dy = (ev.clientY - e.clientY) / rect.height;
       useEditor.getState().applyTimeline('Move', (tl) =>
-        startItem.type === 'text'
+        startItem.type === 'text' || startItem.type === 'graphic'
           ? updateItem<TextItem>(tl, id, { transform: { ...startItem.transform, x: startItem.transform.x + dx, y: startItem.transform.y + dy } })
           : updateItem<ShapeItem>(tl, id, { from: { x: startItem.from.x + dx, y: startItem.from.y + dy }, to: { x: startItem.to.x + dx, y: startItem.to.y + dy } }),
         `move-${id}`, { silent: true });
@@ -138,6 +138,12 @@ function hitTest(o: OverlayNode, x: number, y: number, size: { width: number; he
     const w = (Math.max(...lines.map((l) => l.length)) * s.fontSizePx * 0.56 * o.scale + s.backgroundPaddingPx * 2) / size.width;
     const h = (lines.length * s.fontSizePx * s.lineHeight * o.scale + s.backgroundPaddingPx * 2) / size.height;
     return Math.abs(x - o.x) <= w / 2 && Math.abs(y - o.y) <= h / 2;
+  }
+  if (o.kind === 'graphic') {
+    const px = x * size.width;
+    const py = y * size.height;
+    const pad = 8;
+    return px >= o.box.x - pad && px <= o.box.x + o.box.width + pad && py >= o.box.y - pad && py <= o.box.y + o.box.height + pad;
   }
   if (o.kind === 'shape') {
     const pad = 0.015;

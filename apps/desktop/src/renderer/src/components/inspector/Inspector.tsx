@@ -1,8 +1,9 @@
 import { TRANSITION_PRESETS } from '@framecast/animation';
-import type { ClipItem, ShapeItem, TextItem, ZoomItem } from '@framecast/schema';
+import type { ClipItem, GraphicItem, ShapeItem, TextItem, ZoomItem } from '@framecast/schema';
 import { insertFreezeFrame, setClipSpeed } from '@framecast/timeline';
 import { MousePointerClick, Snowflake } from 'lucide-react';
-import { SHAPE_LABELS } from '../../editor/factories';
+import { useEffect, useState } from 'react';
+import { GRAPHIC_LABELS, SHAPE_LABELS } from '../../editor/factories';
 import { useEditor, useSelectedItem } from '../../stores/editor';
 import { Button } from '../ui/Button';
 import { ColorInput, Field, NumberInput, Section, Segmented, Select, Slider, Toggle } from '../ui/controls';
@@ -14,7 +15,7 @@ export function Inspector() {
   return (
     <aside className="flex h-full flex-col border-l border-border bg-panel" aria-label="Inspector">
       <div className="flex h-9 shrink-0 items-center border-b border-border px-3 text-xs font-semibold">
-        {sel ? ({ clip: 'Clip', zoom: 'Zoom', text: 'Text', shape: SHAPE_LABELS[(sel.item as ShapeItem).shape] ?? 'Element' } as const)[sel.item.type] : 'Project'}
+        {sel ? ({ clip: 'Clip', zoom: 'Zoom', text: 'Text', shape: SHAPE_LABELS[(sel.item as ShapeItem).shape] ?? 'Element', graphic: GRAPHIC_LABELS[(sel.item as GraphicItem).kind] ?? 'Graphic' } as const)[sel.item.type] : 'Project'}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {!sel && <ProjectInspector />}
@@ -22,6 +23,7 @@ export function Inspector() {
         {sel?.item.type === 'zoom' && <ZoomInspector key={sel.item.id} zoom={sel.item} />}
         {sel?.item.type === 'text' && <TextInspector key={sel.item.id} item={sel.item} />}
         {sel?.item.type === 'shape' && <ShapeInspector key={sel.item.id} item={sel.item} />}
+        {sel?.item.type === 'graphic' && <GraphicInspector key={sel.item.id} item={sel.item} />}
       </div>
     </aside>
   );
@@ -193,5 +195,60 @@ function ShapeInspector({ item }: { item: ShapeItem }) {
       )}
       <KeyframesSection item={item} defaults={{ x: 0, y: 0, opacity: 1 }} onChange={(keyframes) => patch({ keyframes }, 'Keyframes')} />
     </>
+  );
+}
+
+function GraphicInspector({ item }: { item: GraphicItem }) {
+  const patch = usePatch(item);
+  const transform = (p: Partial<GraphicItem['transform']>) => patch({ transform: { ...item.transform, ...p } }, 'Transform');
+  const hasData = item.kind === 'barChart' || item.kind === 'counter';
+  return (
+    <>
+      <Section title="Content">
+        {item.kind !== 'progressBar' && <Field label="Title"><input aria-label="Title" value={item.title} onChange={(e) => patch({ title: e.target.value }, 'Title')} className="h-7 w-full rounded-md border border-border bg-raised px-2 text-xs" /></Field>}
+        {(item.kind === 'lowerThird' || item.kind === 'notification' || item.kind === 'subscribe') && (
+          <Field label={item.kind === 'subscribe' ? 'After click' : 'Subtitle'}><input aria-label="Subtitle" value={item.subtitle} onChange={(e) => patch({ subtitle: e.target.value }, 'Subtitle')} className="h-7 w-full rounded-md border border-border bg-raised px-2 text-xs" /></Field>
+        )}
+        {item.kind === 'progressBar' && <Field label="Label"><input aria-label="Label" value={item.title} placeholder="Optional" onChange={(e) => patch({ title: e.target.value }, 'Title')} className="h-7 w-full rounded-md border border-border bg-raised px-2 text-xs" /></Field>}
+        {hasData && (
+          <Field label={item.kind === 'counter' ? 'Target' : 'Values'} hint="Comma-separated numbers">
+            <ListInput label="Values" value={item.values.join(', ')} onCommit={(v) => patch({ values: v.split(',').map((x) => Number(x.trim())).filter(Number.isFinite) }, 'Values')} />
+          </Field>
+        )}
+        {hasData && (
+          <Field label={item.kind === 'counter' ? 'Prefix, suffix' : 'Labels'} hint="Comma-separated">
+            <ListInput label="Labels" value={item.labels.join(', ')} onCommit={(v) => patch({ labels: v.split(',').map((x) => x.trim()) }, 'Labels')} />
+          </Field>
+        )}
+        {item.kind === 'progressBar' && <p className="text-2xs text-muted">The bar fills over the item's duration — stretch it to the length of your video.</p>}
+      </Section>
+      <Section title="Style">
+        <Field label="Accent"><ColorInput label="Accent color" value={item.primaryColor} onChange={(primaryColor) => patch({ primaryColor }, 'Color')} /></Field>
+        <Field label="Text"><ColorInput label="Text color" value={item.textColor} onChange={(textColor) => patch({ textColor }, 'Color')} /></Field>
+        {item.kind === 'lowerThird' && <Field label="Subtitle"><ColorInput label="Subtitle color" value={item.secondaryColor} onChange={(secondaryColor) => patch({ secondaryColor }, 'Color')} /></Field>}
+        <Field label="Font"><Select label="Font family" value={item.fontFamily} options={FONTS} onChange={(fontFamily) => patch({ fontFamily }, 'Font')} /></Field>
+      </Section>
+      <Section title="Transform">
+        <Field label="X"><Slider label="Position X" min={0} max={1} step={0.005} value={item.transform.x} onChange={(x) => transform({ x })} format={(v) => `${Math.round(v * 100)}%`} /></Field>
+        <Field label="Y"><Slider label="Position Y" min={0} max={1} step={0.005} value={item.transform.y} onChange={(y) => transform({ y })} format={(v) => `${Math.round(v * 100)}%`} /></Field>
+        <Field label="Scale"><Slider label="Scale" min={0.3} max={3} step={0.01} value={item.transform.scale} onChange={(scale) => transform({ scale })} format={(v) => `${v.toFixed(2)}×`} /></Field>
+        <Field label="Opacity"><Slider label="Opacity" min={0} max={1} step={0.01} value={item.transform.opacity} onChange={(opacity) => transform({ opacity })} format={(v) => `${Math.round(v * 100)}%`} /></Field>
+      </Section>
+      <Section title="Animation">
+        <AnimationEditor title="In" value={item.animationIn} onChange={(animationIn) => patch({ animationIn }, 'Animation in')} />
+        <AnimationEditor title="Out" value={item.animationOut} onChange={(animationOut) => patch({ animationOut }, 'Animation out')} />
+      </Section>
+      <KeyframesSection item={item} defaults={{ x: item.transform.x, y: item.transform.y, scale: item.transform.scale, opacity: item.transform.opacity }} onChange={(keyframes) => patch({ keyframes }, 'Keyframes')} />
+    </>
+  );
+}
+
+/** Text field that commits on blur/Enter so partially typed lists ("1, 2,") aren't parsed mid-edit. */
+function ListInput({ value, onCommit, label }: { value: string; onCommit(v: string): void; label: string }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  return (
+    <input aria-label={label} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => onCommit(draft)}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} className="h-7 w-full rounded-md border border-border bg-raised px-2 text-xs" />
   );
 }

@@ -72,3 +72,26 @@ describe('compositor', () => {
     expect(scene.cursor!.clicks).toHaveLength(1);
   });
 });
+
+describe('motion graphics', () => {
+  it('composes graphics with intro timing and derived values', async () => {
+    const { counterValue, graphicSize, progressFill } = await import('./index.js');
+    const { project, recordings } = fixture();
+    const gfxTrack = project.timeline.tracks.find((t) => t.kind === 'graphics')!.id;
+    const tl = addItem(project.timeline, gfxTrack, {
+      id: 'g1', type: 'graphic', kind: 'counter', start: 1000, duration: 4000, title: 'Users', subtitle: '',
+      values: [1200], labels: [], primaryColor: '#6366f1', secondaryColor: '#fff', textColor: '#fff', fontFamily: 'Inter',
+      transform: { x: 0.5, y: 0.3, scale: 1, rotation: 0, opacity: 1 }, animationIn: null, animationOut: null, keyframes: {},
+    });
+    const scene = composeFrame(new Composition({ ...project, timeline: tl }, recordings), 1800);
+    const node = scene.overlays.find((o) => o.kind === 'graphic');
+    expect(node?.kind).toBe('graphic');
+    if (node?.kind !== 'graphic') return;
+    expect(node.localT).toBe(800);
+    expect(node.box.x + node.box.width / 2).toBeCloseTo(960);
+    expect(counterValue(node.item, 0)).toBe(0);
+    expect(counterValue(node.item, 5000)).toBe(1200);
+    expect(progressFill(500, 1000)).toBe(0.5);
+    expect(graphicSize('progressBar', { width: 1920, height: 1080 }).width).toBeCloseTo(1728);
+  });
+});

@@ -3,6 +3,7 @@ import type {
   Background,
   CaptionStyle,
   ClipItem,
+  GraphicItem,
   CursorStyle,
   FrameStyle,
   Rect,
@@ -79,7 +80,21 @@ export interface ShapeNode {
   pose: AnimationPose;
 }
 
-export type OverlayNode = TextNode | ShapeNode | VideoLayer;
+export interface GraphicNode {
+  kind: 'graphic';
+  item: GraphicItem;
+  /** Bounding box on the canvas (logical px), after scale and animation offsets. */
+  box: { x: number; y: number; width: number; height: number };
+  scale: number;
+  rotationDeg: number;
+  opacity: number;
+  /** Time since the item started (ms) — drives the built-in animation. */
+  localT: number;
+  duration: number;
+  pose: AnimationPose;
+}
+
+export type OverlayNode = TextNode | ShapeNode | GraphicNode | VideoLayer;
 
 export interface CaptionNode {
   frame: CaptionFrame;

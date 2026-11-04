@@ -1,9 +1,9 @@
-import type { ShapeKind, TimelineItem, Track } from '@framecast/schema';
+import type { GraphicKind, ShapeKind, TimelineItem, Track } from '@framecast/schema';
 import { addItem, duplicateItem, expandGroupSelection, findItem, removeItems, splitAllAt, splitItem } from '@framecast/timeline';
 import { generateAutoZooms, getZoomPreset } from '@framecast/zoom';
 import { toast } from '../stores/app';
 import { useEditor } from '../stores/editor';
-import { TEXT_PRESETS, makeShape, makeZoom } from './factories';
+import { TEXT_PRESETS, makeGraphic, makeShape, makeZoom } from './factories';
 
 const ed = () => useEditor.getState();
 
@@ -58,6 +58,7 @@ export const commands = {
   addZoom: () => insertItem('zoom', makeZoom(ed().playhead), 'Add zoom'),
   addText: (presetId = 'title') => insertItem('text', TEXT_PRESETS.find((p) => p.id === presetId)!.make(ed().playhead), 'Add text'),
   addShape: (shape: ShapeKind) => insertItem('graphics', makeShape(shape, ed().playhead), `Add ${shape}`),
+  addGraphic: (kind: GraphicKind) => insertItem('graphics', makeGraphic(kind, ed().playhead), `Add ${kind}`),
 
   /** Replace automatic zooms using a preset; manual zooms are kept untouched. */
   regenerateAutoZooms: (presetId: string) => {
