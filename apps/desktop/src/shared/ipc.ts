@@ -176,6 +176,8 @@ export interface InvokeChannels {
 
   'subtitles:import': () => { name: string; cues: SubtitleCue[] } | null;
   'subtitles:export': (cues: SubtitleCue[], format: 'srt' | 'vtt', suggestedName: string) => string | null;
+  /** Silent spans (source ms) in an asset's audio. */
+  'audio:detectSilence': (projectId: string, assetId: string, opts: { thresholdDb: number; minSilenceMs: number }) => { start: number; end: number }[];
   'transcription:availability': () => TranscriptionAvailability;
   'transcription:run': (projectId: string, assetId: string, language: string) => SubtitleCue[];
 
@@ -214,7 +216,7 @@ export const INVOKE_CHANNELS = [
   'recording:state', 'recording:chunk', 'recording:streamInfo', 'recording:streamsDone', 'recording:recoveries', 'recording:recover',
   'recording:discardRecovery', 'library:list', 'project:create', 'project:open', 'project:openDialog', 'project:save',
   'project:rename', 'project:delete', 'project:reveal', 'project:importMedia', 'project:saveThumbnail',
-  'subtitles:import', 'subtitles:export', 'transcription:availability', 'transcription:run', 'export:chooseOutput',
+  'subtitles:import', 'subtitles:export', 'audio:detectSilence', 'transcription:availability', 'transcription:run', 'export:chooseOutput',
   'export:start', 'export:cancel', 'export:jobs', 'export:reveal', 'export:renderJob', 'export:frame',
   'export:frameError', 'export:framesDone', 'overlay:setIgnoreMouse',
 ] as const satisfies readonly InvokeChannel[];

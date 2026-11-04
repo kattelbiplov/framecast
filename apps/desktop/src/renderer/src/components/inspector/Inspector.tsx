@@ -1,8 +1,12 @@
 import { TRANSITION_PRESETS } from '@framecast/animation';
 import type { ClipItem, GraphicItem, ShapeItem, TextItem, ZoomItem } from '@framecast/schema';
-import { insertFreezeFrame, setClipSpeed } from '@framecast/timeline';
-import { MousePointerClick, Snowflake } from 'lucide-react';
+import { DEFAULT_SILENCE_CUT, planSilenceCuts } from '@framecast/export';
+import { deleteRange, insertFreezeFrame, setClipSpeed } from '@framecast/timeline';
+import { AudioLines, Loader2, MousePointerClick, Snowflake } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { errorMessage } from '../../lib/format';
+import { invoke } from '../../lib/ipc';
+import { toast } from '../../stores/app';
 import { GRAPHIC_LABELS, SHAPE_LABELS } from '../../editor/factories';
 import { useEditor, useSelectedItem } from '../../stores/editor';
 import { Button } from '../ui/Button';
@@ -33,6 +37,7 @@ function ClipInspector({ clip, isAudio, isOverlay }: { clip: ClipItem; isAudio: 
   const patch = usePatch(clip);
   const applyTimeline = useEditor((s) => s.applyTimeline);
   const playhead = useEditor((s) => s.playhead);
+  const hasAudio = useEditor((s) => s.project?.assets.find((a) => a.id === clip.assetId)?.hasAudio ?? false);
   return (
     <>
       <Section title="Playback">
@@ -44,6 +49,7 @@ function ClipInspector({ clip, isAudio, isOverlay }: { clip: ClipItem; isAudio: 
           </Button>
         )}
       </Section>
+      {hasAudio && <SilenceRemoval clip={clip} />}
       <Section title="Audio">
         <Field label="Volume"><Slider label="Volume" min={0} max={2} step={0.01} value={clip.volume} onChange={(volume) => patch({ volume }, 'Volume')} format={(v) => `${Math.round(v * 100)}%`} /></Field>
         <Field label="Mute"><Toggle label="Mute clip" checked={clip.muted} onChange={(muted) => patch({ muted }, 'Mute')} /></Field>
@@ -250,5 +256,40 @@ function ListInput({ value, onCommit, label }: { value: string; onCommit(v: stri
   return (
     <input aria-label={label} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => onCommit(draft)}
       onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} className="h-7 w-full rounded-md border border-border bg-raised px-2 text-xs" />
+  );
+}
+
+/** Detect pauses in the clip's audio and ripple-delete them across all unlocked tracks. */
+function SilenceRemoval({ clip }: { clip: ClipItem }) {
+  const [threshold, setThreshold] = useState(-35);
+  const [minMs, setMinMs] = useState(700);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    const { project, applyTimeline } = useEditor.getState();
+    if (!project) return;
+    setBusy(true);
+    try {
+      const silences = await invoke('audio:detectSilence', project.id, clip.assetId, { thresholdDb: threshold, minSilenceMs: minMs });
+      const cuts = planSilenceCuts(silences, clip, DEFAULT_SILENCE_CUT);
+      if (cuts.length === 0) return toast('info', 'No pauses long enough to remove.');
+      // Cuts are latest-first, so earlier ranges are unaffected by each ripple.
+      applyTimeline('Remove silences', (tl) => cuts.reduce((acc, c) => deleteRange(acc, c.start, c.end), tl));
+      const removed = cuts.reduce((a, c) => a + c.end - c.start, 0);
+      toast('success', `Removed ${cuts.length} pause${cuts.length === 1 ? '' : 's'} (${(removed / 1000).toFixed(1)}s). Undo to restore.`);
+    } catch (e) {
+      toast('error', errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="Silence removal" defaultOpen={false}>
+      <Field label="Threshold" hint="Audio quieter than this counts as silence"><Slider label="Silence threshold" min={-60} max={-15} step={1} value={threshold} onChange={setThreshold} format={(v) => `${v}dB`} /></Field>
+      <Field label="Min pause"><Slider label="Minimum pause" min={300} max={3000} step={50} value={minMs} onChange={setMinMs} format={(v) => `${(v / 1000).toFixed(2)}s`} /></Field>
+      <Button size="sm" className="w-full" disabled={busy} icon={busy ? <Loader2 size={13} className="animate-spin" /> : <AudioLines size={13} />} onClick={() => void run()}>
+        {busy ? 'Analyzing…' : 'Remove silences'}
+      </Button>
+      <p className="text-2xs text-muted">Cuts every unlocked track so video, audio and zooms stay in sync. Keeps 150 ms around speech.</p>
+    </Section>
   );
 }

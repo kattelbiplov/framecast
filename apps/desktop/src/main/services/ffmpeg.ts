@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
 import { join } from 'node:path';
+import { parseSilenceDetect, type Span } from '@framecast/export';
 import { createLogger } from '../lib/logger.js';
 
 const log = createLogger('ffmpeg');
@@ -75,6 +76,22 @@ export class FfmpegService {
       // ffmpeg exits non-zero without an output file; the stream summary is what we want.
       p.on('exit', () => resolve(parseProbeOutput(err)));
     });
+  }
+
+  /**
+   * Find silent spans (source ms) in a media file's audio.
+   * @param thresholdDb level below which audio counts as silence (e.g. -35)
+   */
+  async detectSilence(file: string, thresholdDb: number, minSilenceMs: number, durationMs: number): Promise<Span[]> {
+    const bin = await this.path();
+    const stderr = await new Promise<string>((resolve, reject) => {
+      const p = spawn(bin, ['-hide_banner', '-nostats', '-i', file, '-vn', '-af', `silencedetect=n=${thresholdDb}dB:d=${(minSilenceMs / 1000).toFixed(3)}`, '-f', 'null', '-'], { stdio: ['ignore', 'ignore', 'pipe'] });
+      let err = '';
+      p.stderr.on('data', (d: Buffer) => (err += d.toString()));
+      p.on('error', reject);
+      p.on('exit', (code) => (code === 0 ? resolve(err) : reject(new Error(`Silence detection failed (${code}): ${err.slice(-500)}`))));
+    });
+    return parseSilenceDetect(stderr, durationMs);
   }
 
   /** Run ffmpeg to completion, rejecting with stderr on failure. */

@@ -85,3 +85,21 @@ describe('job queue', () => {
     expect(q.list()[0]!.result).toBe('a-done');
   });
 });
+
+describe('silence detection', () => {
+  it('parses silencedetect output including a trailing open span', async () => {
+    const { parseSilenceDetect } = await import('./index.js');
+    const out = `[silencedetect @ 0x1] silence_start: 1.0023
+[silencedetect @ 0x1] silence_end: 2.5 | silence_duration: 1.4977
+[silencedetect @ 0x1] silence_start: 4.2`;
+    expect(parseSilenceDetect(out, 5000)).toEqual([{ start: 1002, end: 2500 }, { start: 4200, end: 5000 }]);
+  });
+
+  it('plans padded cuts in timeline time, latest first, skipping short pauses', async () => {
+    const { planSilenceCuts } = await import('./index.js');
+    const clip = { start: 10_000, duration: 10_000, sourceIn: 2000, speed: 2 };
+    const cuts = planSilenceCuts([{ start: 4000, end: 6000 }, { start: 8000, end: 8500 }, { start: 20_000, end: 30_000 }], clip, { paddingMs: 100, minCutMs: 300 });
+    // source 4100..5900 → timeline 11050..11950; 8000..8500 → too short after speed; last clipped to clip end
+    expect(cuts).toEqual([{ start: 19_050, end: 20_000 }, { start: 11_050, end: 11_950 }]);
+  });
+});

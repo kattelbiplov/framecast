@@ -199,6 +199,14 @@ async function bootstrap(): Promise<void> {
       await writeFile(r.filePath, format === 'srt' ? toSrt(cues) : toVtt(cues), 'utf8');
       return r.filePath;
     },
+    'audio:detectSilence': async (_e, projectId, assetId, opts) => {
+      const opened = await store.open(projectId);
+      const asset = opened.project.assets.find((a) => a.id === assetId);
+      if (!asset) throw new Error('Asset not found');
+      const threshold = Math.min(-10, Math.max(-80, Number(opts.thresholdDb)));
+      const minMs = Math.min(10_000, Math.max(100, Number(opts.minSilenceMs)));
+      return ffmpeg.detectSilence(store.resolveAssetPath(asset, opened.dir), threshold, minMs, asset.durationMs ?? 0);
+    },
     'transcription:availability': () => transcription.availability(),
     'transcription:run': async (_e, projectId, assetId, language) => {
       const opened = await store.open(projectId);
