@@ -1,12 +1,15 @@
 import type { AspectRatioPreset } from '@framecast/schema';
 import { aspectSize } from '@framecast/compositor';
-import { ArrowLeft, Check, CloudOff, Loader2, Redo2, Share, Undo2 } from 'lucide-react';
+import { ArrowLeft, Check, CloudOff, LayoutTemplate, Loader2, Redo2, Share, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { commands } from '../../editor/commands';
-import { useApp } from '../../stores/app';
+import { errorMessage } from '../../lib/format';
+import { invoke } from '../../lib/ipc';
+import { toast, useApp } from '../../stores/app';
 import { useEditor } from '../../stores/editor';
 import { Button, IconButton } from '../ui/Button';
 import { Select } from '../ui/controls';
+import { PromptDialog } from '../ui/PromptDialog';
 
 const ASPECTS: { value: AspectRatioPreset; label: string }[] = [
   { value: '16:9', label: '16:9 Landscape' }, { value: '9:16', label: '9:16 Vertical' }, { value: '1:1', label: '1:1 Square' },
@@ -21,6 +24,7 @@ export function TopBar({ onExport }: { onExport(): void }) {
   const saveState = useEditor((s) => s.saveState);
   const apply = useEditor((s) => s.apply);
   const [name, setName] = useState(project.name);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   const commitName = () => {
     const n = name.trim();
@@ -48,6 +52,10 @@ export function TopBar({ onExport }: { onExport(): void }) {
       <div className="no-drag flex items-center gap-1">
         <IconButton label="Undo" disabled={!canUndo} onClick={commands.undo}><Undo2 size={16} /></IconButton>
         <IconButton label="Redo" disabled={!canRedo} onClick={commands.redo}><Redo2 size={16} /></IconButton>
+        <IconButton label="Save look as template" onClick={() => setTemplateOpen(true)}><LayoutTemplate size={16} /></IconButton>
+        <PromptDialog open={templateOpen} onOpenChange={setTemplateOpen} title="Save as template" label="Template name" initial={`${project.name} style`}
+          description="Saves the canvas, background, frame, cursor, zoom, caption and export settings — not your media."
+          onConfirm={(n) => void invoke('templates:save', n, useEditor.getState().project!).then(() => toast('success', `Template “${n}” saved`)).catch((e) => toast('error', errorMessage(e)))} />
         <div className="mx-2 w-40">
           <Select label="Aspect ratio" value={project.canvas.aspect === 'custom' ? '16:9' : project.canvas.aspect} options={ASPECTS} onChange={(aspect) =>
             apply('Change aspect ratio', (p) => ({ ...p, canvas: { ...p.canvas, aspect, size: aspectSize(aspect, aspect === '9:16' || aspect === '4:5' ? 1920 : 1080) } }))

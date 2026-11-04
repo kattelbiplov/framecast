@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CaptionStyle } from './subtitles.js';
 
 export const Shortcut = z.string().min(1);
 
@@ -35,6 +36,8 @@ export const AppSettings = z.object({
     })
     .default({}),
   ffmpegPath: z.string().nullable().default(null),
+  /** User-saved caption styles shown in the Captions panel. */
+  captionPresets: z.array(z.object({ id: z.string().min(1), name: z.string().min(1).max(60), style: CaptionStyle })).max(100).default([]),
   autosaveIntervalSec: z.number().int().min(5).max(600).default(15),
 });
 export type AppSettings = z.infer<typeof AppSettings>;

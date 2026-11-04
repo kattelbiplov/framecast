@@ -18,7 +18,7 @@ Timeline with split/trim/ripple/move/snapping, multitrack, persistence (atomic p
 15 presets, 12 transitions, preset browser, whisper.cpp transcription, subtitle editor, 10 caption styles, word highlighting.
 
 ## Phase 5 — Advanced editing 🟡
-✅ Audio normalise, denoise and ducking (export) · ✅ templates (built-in) · ✅ social presets · ⬜ user-saved presets and templates · ⬜ motion-graphics library (charts, progress bars) · ⬜ background removal.
+✅ Audio normalise, denoise and ducking (export) · ✅ silence detection and removal · ✅ built-in and user-saved templates · ✅ user-saved caption styles · ✅ social presets · ✅ motion graphics (lower third, progress bar, notification, bar chart, subscribe, counter) · ⬜ user-saved animation presets · ⬜ device-mockup motion graphics · ⬜ background removal.
 
 ## Phase 6 — Production release ⬜
 WebCodecs/VideoToolbox fast export · Playwright E2E in CI · signing, notarisation, DMG · auto-update feed · crash reporting (opt-in).

@@ -16,7 +16,9 @@ A desktop screen recorder and intelligent video editor: record your screen, came
 | **Captions** | Offline transcription via whisper.cpp with word timings, SRT/VTT import and export, 10 animated caption styles (word highlight, karaoke, pop, bounce, typewriter, cinematic, social…), cue editing, split, merge and sync |
 | **Styling** | Gradient, animated gradient, solid, pattern, image and video backgrounds; padding, corners, shadow, border, rotation, tilt; browser, MacBook, monitor, phone and tablet mockups; 16:9, 9:16, 1:1 and 4:5 with cursor-following vertical reframing |
 | **Elements** | Arrows, lines, boxes, circles, highlights, spotlights, numbered steps, callouts, images, blur and pixelate privacy regions |
-| **Audio** | Per-clip volume and fades, track mute, waveforms, loudness normalisation, noise reduction, music ducking on export |
+| **Motion graphics** | Animated lower thirds, progress bars, notification pop-ups, bar charts, subscribe buttons and count-up counters, all editable and animatable |
+| **Templates** | Built-in templates plus your own: save any project's look (canvas, frame, cursor, zoom, captions, export) and start new projects from it; saved caption styles |
+| **Audio** | Per-clip volume and fades, track mute, waveforms, one-click silence removal (cuts all tracks in sync), loudness normalisation, noise reduction, music ducking on export |
 | **Export** | MP4 (H.264/HEVC, VideoToolbox on macOS), MOV (ProRes, including 4444 alpha), WebM (VP9, alpha), palette-optimised GIF, audio-only; 720p to 4K; social presets; burned-in or sidecar subtitles; background queue with progress and cancel |
 
 ## Getting started

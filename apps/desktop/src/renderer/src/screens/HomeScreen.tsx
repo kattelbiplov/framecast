@@ -1,4 +1,4 @@
-import { createProject } from '@framecast/schema';
+import { applyTemplate, createProject, type ProjectTemplate } from '@framecast/schema';
 import { Clapperboard, FolderOpen, LayoutTemplate, MoreHorizontal, Plus, Settings, Trash2, Video, History as HistoryIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { LibraryEntry, RecoveryEntry } from '../../../shared/ipc';
@@ -14,18 +14,22 @@ export function HomeScreen() {
   const info = useApp((s) => s.info);
   const [projects, setProjects] = useState<LibraryEntry[] | null>(null);
   const [recoveries, setRecoveries] = useState<RecoveryEntry[]>([]);
+  const [userTemplates, setUserTemplates] = useState<ProjectTemplate[]>([]);
 
   const refresh = useCallback(() => {
     void invoke('library:list').then(setProjects).catch((e) => toast('error', errorMessage(e)));
     void invoke('recording:recoveries').then((r) => setRecoveries(r ?? []));
+    void invoke('templates:list').then((t) => setUserTemplates(t ?? []));
   }, []);
   useEffect(refresh, [refresh]);
 
   const createFromTemplate = async (templateId: string) => {
-    const tpl = TEMPLATES.find((t) => t.id === templateId)!;
+    const builtIn = TEMPLATES.find((t) => t.id === templateId);
+    const user = userTemplates.find((t) => t.id === templateId);
+    if (!builtIn && !user) return;
     try {
-      const opened = await invoke('project:create', tpl.name);
-      await invoke('project:save', tpl.apply(opened.project));
+      const opened = await invoke('project:create', builtIn?.name ?? user!.name);
+      await invoke('project:save', builtIn ? builtIn.apply(opened.project) : applyTemplate(opened.project, user!));
       navigate({ name: 'editor', projectId: opened.project.id });
     } catch (e) {
       toast('error', errorMessage(e));
@@ -113,6 +117,19 @@ export function HomeScreen() {
                   </button>
                 </li>
               ))}
+              {userTemplates.map((t) => (
+                <li key={t.id} className="group relative">
+                  <button type="button" onClick={() => void createFromTemplate(t.id)} className="w-full rounded-xl border border-border bg-panel p-3 text-left transition hover:border-accent/60">
+                    <TemplatePreview project={applyTemplate(createProject('preview'), t)} />
+                    <p className="mt-2 truncate text-sm font-medium">{t.name}</p>
+                    <p className="text-xs text-muted">Your template · {t.canvas.aspect}</p>
+                  </button>
+                  <IconButton size="sm" label={`Delete template ${t.name}`} className="absolute right-2 top-2 bg-panel/90 opacity-0 group-hover:opacity-100"
+                    onClick={() => confirm(`Delete template “${t.name}”?`) && void invoke('templates:delete', t.id).then(refresh)}>
+                    <Trash2 size={12} />
+                  </IconButton>
+                </li>
+              ))}
             </ul>
           </section>
           {info && <p className="text-center text-2xs text-muted">Framecast {info.version} · Library: {info.libraryDir} · Capture engine: {info.nativeCapture ? 'ScreenCaptureKit' : 'Chromium (fallback)'}</p>}
@@ -127,7 +144,7 @@ function TemplatePreview({ project }: { project: ReturnType<typeof createProject
   const ar = width / height;
   return (
     <div className="flex aspect-video items-center justify-center rounded-lg bg-raised">
-      <div className="rounded-md bg-gradient-to-br from-indigo-500 to-pink-500 p-[6%]" style={{ height: ar < 1 ? '86%' : undefined, width: ar >= 1 ? (ar > 1.2 ? '80%' : '50%') : undefined, aspectRatio: String(ar) }}>
+      <div className="rounded-md bg-gradient-to-br from-indigo-500 to-pink-500 p-[6%]" style={{ height: ar < 1 ? '86%' : undefined, width: ar >= 1 ? (ar > 1.2 ? '80%' : '50%') : undefined, aspectRatio: String(ar), background: backgroundCss(project.canvas.background) }}>
         <div className="h-full w-full rounded bg-white/90 shadow" />
       </div>
     </div>
@@ -162,4 +179,11 @@ function ProjectCard({ entry, onOpen, onChanged }: { entry: LibraryEntry; onOpen
       </div>
     </li>
   );
+}
+
+function backgroundCss(bg: ReturnType<typeof createProject>['canvas']['background']): string | undefined {
+  if (bg.type === 'solid') return bg.color;
+  if (bg.type === 'gradient') return `linear-gradient(${bg.angleDeg}deg, ${bg.stops.map((s) => `${s.color} ${s.offset * 100}%`).join(', ')})`;
+  if (bg.type === 'pattern') return bg.background;
+  return undefined;
 }

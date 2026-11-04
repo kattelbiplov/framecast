@@ -3,7 +3,7 @@
  * (`npm run dev` → open the Vite URL, UI tests, screenshots). It fakes a library with one demo
  * project whose "screen recording" is a generated image plus synthetic cursor events.
  */
-import { AppSettings, createProject, type InteractionEvent, type Project, type RecordingMetadata } from '@framecast/schema';
+import { AppSettings, createProject, extractTemplate, type InteractionEvent, type Project, type ProjectTemplate, type RecordingMetadata } from '@framecast/schema';
 import type {
   EventChannel,
   EventChannels,
@@ -105,6 +105,7 @@ export function createMockBridge(): FramecastBridge {
   const emit = <C extends EventChannel>(c: C, p: EventChannels[C]) => listeners[c]?.forEach((l) => (l as (x: EventChannels[C]) => void)(p));
   let settings = AppSettings.parse({});
   const projects = new Map<string, OpenedProject>();
+  let templates: ProjectTemplate[] = [];
   let recState: RecordingState = { phase: 'idle', sessionId: null, engine: null, elapsedMs: 0, countdownRemaining: 0, error: null, projectId: null };
 
   const makeDemo = (name: string): OpenedProject => {
@@ -130,7 +131,7 @@ export function createMockBridge(): FramecastBridge {
   const handlers: Partial<{ [C in keyof InvokeChannels]: (...a: Parameters<InvokeChannels[C]>) => unknown }> = {
     'app:info': () => ({ version: '0.1.0-dev', platform: 'browser', arch: 'x64', nativeCapture: false, libraryDir: '~/Movies/Framecast' }),
     'settings:get': () => settings,
-    'settings:update': (patch) => (settings = AppSettings.parse({ ...settings, ...patch })),
+    'settings:update': (patch) => (settings = AppSettings.parse({ ...settings, ...patch })), // shallow: callers send whole sections
     'permissions:status': () => ({ screen: 'granted', microphone: 'granted', camera: 'granted', accessibility: 'denied' }),
     'permissions:request': () => 'granted',
     'capture:sources': () => [
@@ -178,6 +179,13 @@ export function createMockBridge(): FramecastBridge {
     'project:delete': (id) => void projects.delete(id),
     'project:importMedia': () => ({ assets: [], mediaUrls: {} }),
     'project:saveThumbnail': () => undefined,
+    'templates:list': () => templates,
+    'templates:save': (name, project) => {
+      const t = extractTemplate(project, name);
+      templates = [t, ...templates];
+      return t;
+    },
+    'templates:delete': (id) => void (templates = templates.filter((t) => t.id !== id)),
     'subtitles:import': () => null,
     'subtitles:export': () => null,
     'transcription:availability': () => ({ available: false, reason: 'Transcription needs the desktop app with whisper.cpp installed.' }),

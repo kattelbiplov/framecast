@@ -1,15 +1,18 @@
 import { newId, SubtitleTrack, type SubtitleCue, type CaptionStyle } from '@framecast/schema';
 import { CAPTION_PRESETS, applyCaptionPreset, editCueText, mergeCues, shiftCues, splitCue } from '@framecast/subtitles';
 import clsx from 'clsx';
-import { Download, FileUp, Loader2, Merge, Mic, Plus, Scissors, Trash2 } from 'lucide-react';
+import { BookmarkPlus, Download, FileUp, Loader2, Merge, Mic, Plus, Scissors, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { TranscriptionAvailability } from '../../../../shared/ipc';
 import { errorMessage, formatTime } from '../../lib/format';
 import { invoke } from '../../lib/ipc';
-import { toast } from '../../stores/app';
+import { toast, useApp } from '../../stores/app';
 import { useEditor } from '../../stores/editor';
 import { Button, IconButton } from '../ui/Button';
 import { ColorInput, Field, Section, Segmented, Select, Slider, Toggle } from '../ui/controls';
+import { PromptDialog } from '../ui/PromptDialog';
+
+const EMPTY_PRESETS: never[] = [];
 
 const LANGUAGES = [
   { value: 'auto', label: 'Auto-detect' }, { value: 'en', label: 'English' }, { value: 'es', label: 'Spanish' }, { value: 'fr', label: 'French' },
@@ -24,6 +27,9 @@ export function CaptionsPanel() {
   const [availability, setAvailability] = useState<TranscriptionAvailability | null>(null);
   const [language, setLanguage] = useState('auto');
   const [busy, setBusy] = useState(false);
+  const [savingStyle, setSavingStyle] = useState(false);
+  const myPresets = useApp((s) => s.settings?.captionPresets ?? EMPTY_PRESETS);
+  const updateSettings = useApp((s) => s.updateSettings);
   const track = project.subtitles[0];
   const voiceAsset = project.assets.find((a) => a.role === 'microphone') ?? project.assets.find((a) => a.hasAudio);
 
@@ -86,6 +92,26 @@ export function CaptionsPanel() {
             </button>
           ))}
         </div>
+        {(myPresets.length > 0 || track) && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-muted">My styles</p>
+              {track && <Button size="sm" variant="ghost" className="h-6 px-1.5 text-2xs" icon={<BookmarkPlus size={12} />} onClick={() => setSavingStyle(true)}>Save current</Button>}
+            </div>
+            {myPresets.length === 0 && <p className="text-2xs text-muted">Save a style to reuse it in any project.</p>}
+            <div className="flex flex-wrap gap-1">
+              {myPresets.map((p) => (
+                <span key={p.id} className="group inline-flex items-center rounded-full border border-border bg-raised text-2xs">
+                  <button type="button" className="py-1 pl-2.5 pr-1 hover:text-accent" onClick={() => setTrack((t) => ({ ...t, style: p.style }), 'Caption style')}>{p.name}</button>
+                  <button type="button" aria-label={`Delete style ${p.name}`} className="pr-1.5 text-muted opacity-0 hover:text-danger group-hover:opacity-100"
+                    onClick={() => void updateSettings({ captionPresets: myPresets.filter((x) => x.id !== p.id) })}><X size={11} /></button>
+                </span>
+              ))}
+            </div>
+            <PromptDialog open={savingStyle} onOpenChange={setSavingStyle} title="Save caption style" label="Style name" initial="My caption style"
+              onConfirm={(name) => track && void updateSettings({ captionPresets: [...myPresets, { id: newId('cap'), name, style: { ...track.style, preset: track.style.preset } }] }).then(() => toast('success', `Saved “${name}”`))} />
+          </div>
+        )}
         {track && (
           <>
             <Field label="Show"><Toggle label="Show captions" checked={track.visible} onChange={(visible) => setTrack((t) => ({ ...t, visible }), 'Toggle captions')} /></Field>

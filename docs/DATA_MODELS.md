@@ -43,6 +43,7 @@ All models are defined once, as zod schemas in [`packages/schema`](../packages/s
 | `zoom` | `scale, focus: followCursor \| fixed{point}, transitionInMs/OutMs, easing, origin: auto\|manual, disabled` |
 | `text` | `text, style (font, colour, background, stroke, shadow…), transform, animationIn/Out, keyframes` |
 | `shape` | `shape (arrow, rectangle, blur, pixelate, step, callout, image…), from, to, stroke, fill, amount, label, animationIn/Out, keyframes` |
+| `graphic` | `kind (lowerThird, progressBar, notification, barChart, subscribe, counter), title, subtitle, values, labels, colours, transform, animationIn/Out, keyframes`; the built-in animation is driven by local time |
 
 The first video track is the **screen** layer: it receives frame styling, the virtual camera, the cursor and the linked webcam. Further video tracks are free overlays.
 
@@ -99,3 +100,7 @@ Cue times are timeline times. When word timings are missing (imported SRT), word
 ## Settings: `<userData>/settings.json`
 
 Theme, library location, recording defaults, privacy toggles, excluded bundle IDs, global shortcuts, and tool paths (ffmpeg, whisper.cpp). See [`schema/settings.ts`](../packages/schema/src/settings.ts).
+
+## Templates: `<userData>/templates/<id>.json`
+
+`ProjectTemplate { schemaVersion, id, name, createdAt, canvas, frame, cursor, webcam, autoZoom, audio, export, captionStyle }`. A template is a project's *look* without media, timeline or caption text. Media backgrounds fall back to the default gradient because they aren't portable. See [`schema/template.ts`](../packages/schema/src/template.ts) (`extractTemplate` / `applyTemplate`).

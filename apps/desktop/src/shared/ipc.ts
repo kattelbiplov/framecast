@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  ProjectTemplate,
   Asset,
   ExportSettings,
   Project,
@@ -174,6 +175,10 @@ export interface InvokeChannels {
   'project:importMedia': (projectId: string) => { assets: Asset[]; mediaUrls: Record<string, string> };
   'project:saveThumbnail': (projectId: string, png: Uint8Array) => void;
 
+  'templates:list': () => ProjectTemplate[];
+  'templates:save': (name: string, project: Project) => ProjectTemplate;
+  'templates:delete': (id: string) => void;
+
   'subtitles:import': () => { name: string; cues: SubtitleCue[] } | null;
   'subtitles:export': (cues: SubtitleCue[], format: 'srt' | 'vtt', suggestedName: string) => string | null;
   /** Silent spans (source ms) in an asset's audio. */
@@ -216,6 +221,7 @@ export const INVOKE_CHANNELS = [
   'recording:state', 'recording:chunk', 'recording:streamInfo', 'recording:streamsDone', 'recording:recoveries', 'recording:recover',
   'recording:discardRecovery', 'library:list', 'project:create', 'project:open', 'project:openDialog', 'project:save',
   'project:rename', 'project:delete', 'project:reveal', 'project:importMedia', 'project:saveThumbnail',
+  'templates:list', 'templates:save', 'templates:delete',
   'subtitles:import', 'subtitles:export', 'audio:detectSilence', 'transcription:availability', 'transcription:run', 'export:chooseOutput',
   'export:start', 'export:cancel', 'export:jobs', 'export:reveal', 'export:renderJob', 'export:frame',
   'export:frameError', 'export:framesDone', 'overlay:setIgnoreMouse',

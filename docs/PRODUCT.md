@@ -37,13 +37,13 @@ Anyone can turn a raw screen recording into a polished, professional video in mi
 
 **V1**
 
-- Template save/load from a user's own project
-- Custom reusable animation and caption presets in a library
+- ~~Template save/load from a user's own project~~ (done)
+- Custom reusable animation presets (caption presets done)
 - Clip grouping UI, marker UI, ripple modes
 - Playwright E2E suite in CI
 - Signed and notarised builds with auto-update
 - WebCodecs export fast path
-- Audio silence detection and auto-cut
+- ~~Audio silence detection and auto-cut~~ (done)
 - Speaker diarisation
 - Camera background blur and removal (Vision framework)
 

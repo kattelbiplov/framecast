@@ -26,6 +26,7 @@ import { permissions } from './services/permissions.js';
 import { ProjectStore } from './services/projects.js';
 import { RecordingSessionManager } from './services/recording/session-manager.js';
 import { SettingsService } from './services/settings.js';
+import { TemplateStore } from './services/templates.js';
 import { TranscriptionService } from './services/transcription.js';
 import { createExportWindow } from './windows/export-window.js';
 import { rendererOrigins } from './windows/load.js';
@@ -61,6 +62,7 @@ async function bootstrap(): Promise<void> {
   const ffmpeg = new FfmpegService(() => settings.get().ffmpegPath, paths.resourcesBin());
   const store = new ProjectStore(paths.libraryIndex(), libraryDir, media, ffmpeg);
   await store.init();
+  const templates = new TemplateStore(join(paths.userData(), 'templates'));
   const native = new NativeCaptureBridge(paths.resourcesBin());
   const recorder = new RecordingSessionManager({
     sessionsDir: () => join(libraryDir(), '.sessions'),
@@ -186,6 +188,10 @@ async function bootstrap(): Promise<void> {
       return r.canceled ? { assets: [], mediaUrls: {} } : store.importMedia(r.filePaths);
     },
     'project:saveThumbnail': (_e, id, png) => store.saveThumbnail(id, png),
+
+    'templates:list': () => templates.list(),
+    'templates:save': (_e, name, project) => templates.save(name, project),
+    'templates:delete': (_e, id) => templates.remove(id),
 
     'subtitles:import': async () => {
       const r = await dialog.showOpenDialog(mainWindow!, { properties: ['openFile'], filters: [{ name: 'Subtitles', extensions: ['srt', 'vtt'] }] });
