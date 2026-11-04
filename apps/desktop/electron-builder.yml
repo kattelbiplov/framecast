@@ -1,0 +1,36 @@
+appId: com.framecast.app
+productName: Framecast
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraResources:
+  # Native ScreenCaptureKit helper and an LGPL ffmpeg build (see docs/BUILDING.md).
+  - from: resources/bin
+    to: bin
+    filter: ['**/*']
+asar: true
+mac:
+  category: public.app-category.video
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSCameraUsageDescription: Framecast records your camera when you enable the webcam overlay.
+    NSMicrophoneUsageDescription: Framecast records your microphone for voice narration.
+    NSScreenCaptureUsageDescription: Framecast needs screen recording access to capture your screen.
+  notarize: true
+win:
+  target: nsis
+linux:
+  target: AppImage
+  category: AudioVideo
+publish:
+  provider: generic
+  url: https://updates.example.com/framecast

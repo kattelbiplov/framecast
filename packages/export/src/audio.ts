@@ -27,7 +27,11 @@ const VOICE_ROLES = new Set<Asset['role']>(['microphone']);
 export function buildAudioGraph(
   project: Project,
   resolvePath: (asset: Asset) => string,
-  { firstInputIndex = 1, totalDurationMs }: { firstInputIndex?: number; totalDurationMs: number },
+  {
+    firstInputIndex = 1,
+    totalDurationMs,
+    rangeStartMs = 0,
+  }: { firstInputIndex?: number; totalDurationMs: number; rangeStartMs?: number },
 ): AudioGraph | null {
   const assets = new Map(project.assets.map((a) => [a.id, a]));
   const inputs: string[] = [];
@@ -96,7 +100,8 @@ export function buildAudioGraph(
     graph.push(mix(other, 'bed'));
     final = '[bed]';
   }
-  const tail = [`apad=whole_dur=${s(totalDurationMs)}`, `atrim=end=${s(totalDurationMs)}`];
+  // Pad to the full timeline, then cut out the exported range [rangeStartMs, totalDurationMs).
+  const tail = [`apad=whole_dur=${s(totalDurationMs)}`, `atrim=start=${s(rangeStartMs)}:end=${s(totalDurationMs)}`, 'asetpts=PTS-STARTPTS'];
   if (project.audio.normalize) tail.unshift('loudnorm=I=-16:TP=-1.5:LRA=11');
   graph.push(`${final}${tail.join(',')}[aout]`);
   return { inputs, filterComplex: graph.join(';'), outLabel: 'aout' };

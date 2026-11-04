@@ -19,7 +19,7 @@ const ARROW = /^\s*([\d:.,]+)\s+-->\s+([\d:.,]+)/;
 
 function parseBlocks(text: string, isVtt: boolean): SubtitleCue[] {
   const cues: SubtitleCue[] = [];
-  const blocks = text.replace(/\r\n?/g, '\n').replace(/^﻿/, '').split(/\n{2,}/);
+  const blocks = text.replace(/\r\n?/g, '\n').replace(/^\uFEFF/, '').split(/\n{2,}/);
   for (const block of blocks) {
     const lines = block.split('\n').filter((l) => l.length > 0);
     const timingIndex = lines.findIndex((l) => ARROW.test(l));

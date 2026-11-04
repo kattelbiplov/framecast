@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": [],
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/renderer/src/*"] }
+  },
+  "include": ["src/renderer/src/**/*", "src/renderer/src/env.d.ts", "src/shared/**/*"]
+}
