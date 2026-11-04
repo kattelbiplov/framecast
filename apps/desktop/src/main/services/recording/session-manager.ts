@@ -6,6 +6,7 @@ import type { OpenedProject, RecordingOptions, RecordingState, RecoveryEntry, St
 import { atomicWriteJson, exists, readJson } from '../../lib/fs.js';
 import { createLogger } from '../../lib/logger.js';
 import { getCachedSource } from '../capture/sources.js';
+import { ClickTracker } from '../capture/click-tracker.js';
 import { PollingCursorTracker } from '../capture/cursor-tracker.js';
 import type { NativeCaptureBridge, NativeTrack } from '../capture/native-bridge.js';
 import type { FfmpegService } from '../ffmpeg.js';
@@ -37,6 +38,7 @@ interface ActiveSession {
   eventBuffer: InteractionEvent[];
   eventFlush: NodeJS.Timeout | null;
   tracker: PollingCursorTracker | null;
+  clicks: ClickTracker | null;
   countdownTimer: NodeJS.Timeout | null;
   tickTimer: NodeJS.Timeout | null;
   streamsDone: (() => void) | null;
@@ -98,7 +100,7 @@ export class RecordingSessionManager {
 
     this.session = {
       file, dir, clock: new RecordingClock(), streams: new Map(), eventBuffer: [], eventFlush: null,
-      tracker: null, countdownTimer: null, tickTimer: null, streamsDone: null,
+      tracker: null, clicks: null, countdownTimer: null, tickTimer: null, streamsDone: null,
     };
     this.setState({ ...IDLE, phase: 'countdown', sessionId, engine, countdownRemaining: options.countdownSec });
     if (options.countdownSec <= 0) await this.beginCapture();
@@ -140,8 +142,15 @@ export class RecordingSessionManager {
     } else if (options.trackInteractions && source.kind !== 'window' && source.kind !== 'none') {
       const info = options.sourceId ? getCachedSource(options.sourceId) : undefined;
       const bounds = info?.bounds ?? screen.getPrimaryDisplay().bounds;
-      s.tracker = new PollingCursorTracker(bounds, { now: () => s.clock.timeAt(Date.now()) }, (e) => s.eventBuffer.push(e));
+      const clock = { now: () => s.clock.timeAt(Date.now()) };
+      const emit = (e: InteractionEvent) => s.eventBuffer.push(e);
+      s.tracker = new PollingCursorTracker(bounds, clock, emit);
       s.tracker.start();
+      s.clicks = new ClickTracker({ bounds, clock, emit, trackShortcuts: options.trackShortcuts });
+      if (!s.clicks.start()) {
+        s.clicks = null;
+        log.warn('Recording without click data; auto zoom will use cursor pauses');
+      }
     }
     s.clock.start(Date.now());
     s.eventFlush = setInterval(() => void this.flushEvents(), 1000);
@@ -377,6 +386,8 @@ export class RecordingSessionManager {
 
   private stopTimers(s: ActiveSession): void {
     s.tracker?.stop();
+    s.clicks?.stop();
+    s.clicks = null;
     for (const t of [s.countdownTimer, s.tickTimer, s.eventFlush]) if (t) clearInterval(t);
     s.countdownTimer = s.tickTimer = s.eventFlush = null;
   }

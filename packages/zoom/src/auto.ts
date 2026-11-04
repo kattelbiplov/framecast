@@ -15,13 +15,17 @@ export function findPointsOfInterest(
   preset: ZoomPreset,
 ): PointOfInterest[] {
   const pois: PointOfInterest[] = [];
+  // Recordings without click data (e.g. click tracking unavailable or denied) would otherwise
+  // get no zooms at all with click-driven presets; fall back to cursor pauses.
+  const hasClicks = events.some((e) => e.type === 'down');
+  const usePauses = preset.triggers.pauses || (preset.triggers.clicks && !hasClicks);
   if (preset.triggers.clicks) {
     for (const c of extractClicks(events)) {
       if (c.button === 'left') pois.push({ t: c.t, x: c.x, y: c.y, kind: c.double ? 'doubleClick' : 'click' });
     }
   }
   const path = extractRawPath(events);
-  if (preset.triggers.pauses) {
+  if (usePauses) {
     for (const span of findIdleSpans(path, preset.pauseMs)) {
       const p = path.find((pt) => pt.t >= span.start);
       if (p && Number.isFinite(span.end)) pois.push({ t: span.start, x: p.x, y: p.y, kind: 'pause' });

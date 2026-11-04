@@ -168,7 +168,7 @@ export function RecordingSetupScreen() {
               <Field label="Shortcuts" hint="Records modifier shortcuts like ⌘C. Plain typing is never recorded."><Toggle label="Track keyboard shortcuts" checked={rec.trackShortcuts} onChange={(v) => setRec({ trackShortcuts: v })} /></Field>
               <Field label="Hide cursor" hint="Omit the OS cursor from video so it can be restyled in the editor (native engine)"><Toggle label="Hide cursor in video" checked={rec.hideCursorInVideo} onChange={(v) => setRec({ hideCursorInVideo: v })} /></Field>
               {!info?.nativeCapture && (
-                <p className="flex gap-1.5 rounded-lg bg-raised p-2 text-2xs text-muted"><MousePointer2 size={12} className="mt-px shrink-0" />The Chromium fallback engine records the cursor into the video and tracks movement only (no clicks). Install the native capture helper for full cursor effects.</p>
+                <p className="flex gap-1.5 rounded-lg bg-raised p-2 text-2xs text-muted"><MousePointer2 size={12} className="mt-px shrink-0" />The fallback engine records the system cursor into the video, so cursor styling is limited. Clicks are tracked for auto zoom (macOS needs Accessibility access). Install the native capture helper for a fully restylable cursor.</p>
               )}
             </Section>
             <Section title="Project">

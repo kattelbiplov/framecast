@@ -43,7 +43,23 @@ try {
   await win.click('[aria-label="Frame rate"] >> text=30');
   await win.click('button:has-text("Start recording")');
   await win.waitForFunction(async () => (await window.framecast.invoke('recording:state')).phase === 'recording', null, { timeout: 20_000 });
-  await sleep(3000);
+  // Real OS-level clicks (X11) when xdotool is available, to exercise click tracking → auto zoom.
+  const xdotool = (() => {
+    try {
+      execFileSync('xdotool', ['version'], { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  if (xdotool) {
+    execFileSync('xdotool', ['mousemove', '900', '300']);
+    await sleep(500);
+    execFileSync('xdotool', ['click', '1']);
+    await sleep(2500);
+  } else {
+    await sleep(3000);
+  }
   await win.evaluate(() => window.framecast.invoke('recording:stop'));
   await win.waitForSelector('button:has-text("Export")', { timeout: 60_000 });
 
@@ -59,6 +75,24 @@ try {
   assert(opened.project.assets.some((a) => a.role === 'screen'), 'screen asset recorded');
   assert(opened.project.timeline.tracks.some((t) => t.kind === 'text' && t.items.length === 1), 'title added');
   assert(opened.project.subtitles[0]?.cues.length === 1, 'caption added');
+  if (xdotool) {
+    const clicks = opened.recordings[0].events.filter((e) => e.type === 'down');
+    assert(clicks.length === 1, `click recorded (${clicks.length})`);
+    const zooms = opened.project.timeline.tracks.find((t) => t.kind === 'zoom').items;
+    assert(zooms.length >= 1 && zooms[0].start <= clicks[0].t && zooms[0].start + zooms[0].duration >= clicks[0].t, 'auto zoom generated around the click');
+  }
+
+  // The media protocol must support Range requests or <video> cannot seek.
+  const seekable = await win.evaluate(async (url) => {
+    const v = document.createElement('video');
+    v.muted = true;
+    v.src = url;
+    await new Promise((r) => v.addEventListener('loadedmetadata', r, { once: true }));
+    v.currentTime = 1;
+    await new Promise((r) => v.addEventListener('seeked', r, { once: true }));
+    return v.currentTime;
+  }, Object.values(opened.mediaUrls)[0]);
+  assert(Math.abs(seekable - 1) < 0.1, `recorded media is seekable (currentTime=${seekable})`);
 
   const end = Math.max(...opened.project.timeline.tracks.flatMap((t) => t.items.map((i) => i.start + i.duration)));
   const out = join(home, 'export.mp4');

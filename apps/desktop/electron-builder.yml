@@ -12,6 +12,11 @@ extraResources:
     to: bin
     filter: ['**/*']
 asar: true
+# Native deps are N-API with prebuilt binaries for every platform/arch (uiohook-napi),
+# so there is nothing to recompile per Electron version.
+npmRebuild: false
+asarUnpack:
+  - '**/node_modules/uiohook-napi/**'
 mac:
   category: public.app-category.video
   target:
@@ -30,6 +35,7 @@ win:
   target: nsis
 linux:
   target: AppImage
+  executableName: framecast
   category: AudioVideo
 publish:
   provider: generic

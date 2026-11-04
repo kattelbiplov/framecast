@@ -52,3 +52,20 @@ describe('camera', () => {
     expect(clampCenter({ x: 0, y: 1 }, 4)).toEqual({ x: 0.125, y: 0.875 });
   });
 });
+
+describe('auto zoom without click data', () => {
+  it('falls back to cursor pauses when a recording has no clicks', () => {
+    // Cursor moves, rests at (0.8, 0.2) for 3 s, then moves on — no mouse-down events.
+    const events: InteractionEvent[] = [
+      { type: 'move', t: 0, x: 0.1, y: 0.9 },
+      { type: 'move', t: 2000, x: 0.8, y: 0.2 },
+      { type: 'move', t: 5000, x: 0.8, y: 0.2 },
+      { type: 'move', t: 5100, x: 0.3, y: 0.6 },
+      { type: 'move', t: 15000, x: 0.3, y: 0.61 },
+    ];
+    const zooms = generateAutoZooms(events, getZoomPreset('smooth'), { durationMs: 20000 });
+    expect(zooms.length).toBeGreaterThanOrEqual(1);
+    expect(zooms[0]!.start).toBeLessThan(2000);
+    expect(zooms[0]!.start + zooms[0]!.duration).toBeGreaterThan(2000);
+  });
+});

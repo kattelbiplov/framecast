@@ -44,8 +44,9 @@ The planned fast path (Phase 6):
 
 The fallback is used on Linux and Windows, and on macOS without the helper. It records with `MediaRecorder` (VP9 WebM, 1 s chunks streamed to disk) and remuxes on stop so files are seekable.
 
-Its limits are recorded in metadata (`cursorBakedIn: true`):
+Cursor movement is polled from Electron at 60 Hz. Clicks, scrolls and modifier shortcuts come from a global input hook (`uiohook-napi`: N-API, prebuilt for macOS, Windows and Linux, so no per-Electron rebuild). On macOS it needs the Accessibility permission. If the hook can't start, recording continues and auto zoom falls back to cursor pauses.
 
-- The cursor is baked into the video.
-- Only cursor *movement* is tracked (no clicks), so auto zoom relies on cursor pauses.
+Its remaining limits are recorded in metadata (`cursorBakedIn: true`):
+
+- The cursor is baked into the video, so it can't be restyled or hidden in the editor.
 - Window capture has no cursor mapping.

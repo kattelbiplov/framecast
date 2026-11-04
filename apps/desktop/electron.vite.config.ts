@@ -2,13 +2,13 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 import { resolve } from 'node:path';
 
-// Workspace packages and npm deps are bundled into main/preload (only `electron` stays external),
-// so the packaged app does not depend on node_modules layout.
+// Workspace packages and npm deps are bundled into main/preload. Only `electron` and native
+// modules (uiohook-napi, loaded at runtime from node_modules) stay external.
 export default defineConfig({
   main: {
     build: {
       outDir: 'out/main',
-      rollupOptions: { input: resolve(__dirname, 'src/main/index.ts'), external: ['electron'] },
+      rollupOptions: { input: resolve(__dirname, 'src/main/index.ts'), external: ['electron', 'uiohook-napi'] },
     },
   },
   preload: {

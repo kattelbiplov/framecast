@@ -116,6 +116,9 @@ export class PreviewPlayer {
       } else {
         if (!el.paused) el.pause();
         if (Math.abs(el.currentTime - w.time) > 1 / 120) el.currentTime = w.time;
+        // A detached, paused element can sit at HAVE_METADATA forever without decoding a frame;
+        // an explicit seek forces Chromium to fetch and decode one (the 'seeked' event repaints).
+        else if (el.readyState < 2 && el.readyState >= 1 && !el.seeking && el instanceof HTMLVideoElement) el.currentTime = w.time;
       }
     }
     for (const [assetId, el] of this.pool.all()) {
